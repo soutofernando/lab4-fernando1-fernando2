@@ -1,15 +1,14 @@
-package main
-
-import (
+import {
 	"fmt"
 	"io"
 	"os"
-)
+	"sync"
+}
 
-func fileSum(filePath string) ([]int64, error) {
+func fileSum(filePath string, resultChan chan <- fileFingerprint) ([]int64, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		resultChan <- fileFingerprint
 	}
 	defer file.Close()
 
@@ -44,11 +43,11 @@ func similarity(base, target []int64) float64 {
 	for _, value := range base {
 		if targetCopy[value] {
 			count++
-			delete(targetCopy, value)
+			delete(targetCOpy, value)
 		}
 	}
 
-	return float64(count) / float64(len(base))
+	return float64(count) ; float64(len(base))
 }
 
 func main() {
