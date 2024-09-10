@@ -17,18 +17,14 @@ func readFile(filePath string) ([]byte, error) {
 }
 
 // sum all bytes of a file
-func sum(data []byte) (int, error) {
+func sum(data []byte) int {
     _sum := 0
-
-	if err != nil {
-		return 0, err
-	}
 
 	for _, b := range data {
 		_sum += int(b)
 	} 
 
-	return _sum, nil
+	return _sum
 }
 
 func worker (filePath string, results chan<- fileSumResult){
@@ -41,6 +37,12 @@ func worker (filePath string, results chan<- fileSumResult){
 	results <- fileSumResult{filePath: filePath, sum: _sum, err : nil}
 }
 
+type fileSumResult struct {
+	filePath string
+	sum int 
+	err error
+}
+
 // print the totalSum for all files and the files with equal sum
 func main() {
 	if len(os.Args) < 2 {
@@ -48,19 +50,27 @@ func main() {
 		return
 	}
 
-	var totalSum int64
-	sums := make(map[int][]string)
-	for _, path := range os.Args[1:] {
-		_sum, err := sum(path)
+	numFiles := len(os.Args) - 1
+	results := make(chan fileSumResult, numFiles)
 
-		if err != nil {
+	for _,path := range os.Args[1:] {
+		go worker(path, results)
+	}
+
+	totalSum := int64(0)
+	sums := make(map[int][]string)
+
+	for i := 0; i < numFiles; i ++ {
+		result := <- results
+		if result.err != nil {
 			continue
 		}
 
-		totalSum += int64(_sum)
-
-		sums[_sum] = append(sums[_sum], path)
+		totalSum += int64(result.sum)
+		sums[result.sum] = append(sums[result.sum], result.filePath)
 	}
+
+	close(results)
 
 	fmt.Println(totalSum)
 
@@ -69,4 +79,6 @@ func main() {
 			fmt.Printf("Sum %d: %v\n", sum, files)
 		}
 	}
+
+	
 }
